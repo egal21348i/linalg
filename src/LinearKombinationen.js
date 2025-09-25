@@ -232,24 +232,26 @@ export default function Linearkombinationen() {
     if (selected === id) setSelected(null);
   };
 
-  const ComboBadge = () => (
-    <div className="flex gap-2 items-center text-sm">
-      <span className="font-mono">Typ:</span>
-      {["linear", "affine", "convex", "cone"].map(t => (
-        <button
-          key={t}
-          onClick={() => setCombo(t)}
-          className={`px-2 py-1 border rounded ${
-            combo === t
-              ? "border-black bg-black text-white"
-              : "border-black bg-white text-black hover:text-red-600 hover:border-red-600"
-          }`}
-        >
-          {t}
-        </button>
-      ))}
-    </div>
-  );
+// --- Änderungen in ComboBadge ---
+const ComboBadge = () => (
+  <div className="flex gap-2 items-center text-sm">
+    <span className="font-mono">Typ:</span>
+    {["linear", "affine", "convex", "cone", "hyperplane"].map(t => (
+      <button
+        key={t}
+        onClick={() => setCombo(t)}
+        className={`px-2 py-1 border rounded ${
+          combo === t
+            ? "border-black bg-black text-white"
+            : "border-black bg-white text-black hover:text-red-600 hover:border-red-600"
+        }`}
+      >
+        {t}
+      </button>
+    ))}
+  </div>
+);
+
 
   const ModeBadge = () => (
     <div className="flex gap-2 items-center text-sm">
@@ -640,6 +642,23 @@ function Region3D({ vectors, combo = "linear", toPx, W, H }) {
   const EDGE="#0f172a", FILL="#22c55e33", thin=1.2;
 
   let content=null;
+// ===== HYPERPLANE =====
+if (mode === "hyperplane") {
+  if (NZ.length > 0) {
+    const n = NZ[0]; // erster Vektor als Normalenvektor
+    const poly = planeCubePolygon({ x: 0, y: 0, z: 0 }, n);
+    if (poly) {
+      content = (
+        <polygon
+          points={poly.map(p => `${p.x},${p.y}`).join(" ")}
+          fill="#0ea5e933"
+          stroke="#0ea5e9"
+          strokeWidth="1"
+        />
+      );
+    }
+  }
+}
 
   // ===== LINEAR =====
   if (mode==="linear") {
@@ -972,6 +991,13 @@ if (combo === "linear") {
   return infLine({ x: 0, y: 0 }, nz[0], { sw: 1.2 });
 }
 
+if (combo === "hyperplane") {
+  if (nz.length === 0) return null;
+  const v = nz[0];
+  // Orthogonaler Richtungsvektor
+  const ortho = { x: -v.y, y: v.x };
+  return infLine({ x: 0, y: 0 }, ortho, { stroke: "#0ea5e9", sw: 1.5 });
+}
 
 if (combo === "affine") {
   // Ursprung NICHT für die "Punkte"-Affinhülle verwenden

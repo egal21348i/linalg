@@ -50,21 +50,21 @@ const exercises = [
       );
     },
   },
-  {
-    id: "scalar-mult",
-    name: "Skalarmultiplikation",
-    description: "Multipliziere einen Vektor mit einem Skalar.",
-    defaultParams: { dim: 2 },
-    generate: ({ dim }) => {
-      const scalar = Math.floor(Math.random() * 5) + 1;
-      const vector = Array.from({ length: dim }, () => Math.floor(Math.random() * 5));
-      const solution = vector.map((v) => v * scalar);
-      return { scalar, vector, solution };
-    },
-    check: (input, solution) => {
-      return input.length === solution.length && input.every((val, i) => Number(val) === solution[i]);
-    },
+{
+  id: "scalar-mult",
+  name: "Skalarprodukt",
+  description: "Berechne das Skalarprodukt zweier Vektoren.",
+  defaultParams: { dim: 2 },
+  generate: ({ dim }) => {
+    const v1 = Array.from({ length: dim }, () => Math.floor(Math.random() * 5));
+    const v2 = Array.from({ length: dim }, () => Math.floor(Math.random() * 5));
+    const solution = v1.reduce((sum, val, i) => sum + val * v2[i], 0);
+    return { v1, v2, solution };
   },
+  check: (input, solution) => {
+    return Number(input) === solution;
+  },
+},
   {
     id: "vector-add",
     name: "Vektoraddition",
@@ -93,6 +93,19 @@ function MatrixBracket({ rows, flip }) {
     </svg>
   );
 }
+function ScalarInput({ value, onChange, feedbackColor }) {
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      className={`w-16 px-2 py-1 rounded border text-center outline-none font-mono ${feedbackColor} bg-white border-black focus:border-red-600`}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
 
 function MatrixDisplay({ matrix }) {
   return (
@@ -234,13 +247,16 @@ function Gym() {
     setParams(exercises.find((ex) => ex.id === id).defaultParams);
     const ex = exercises.find((ex) => ex.id === id);
     setProblem(ex.generate(ex.defaultParams));
-    setUserInput(
-      id === "matrix-mult"
-        ? Array.from({ length: ex.defaultParams.rows }, () =>
-            Array.from({ length: ex.defaultParams.rows }, () => "")
-          )
+  setUserInput(
+    id === "matrix-mult"
+      ? Array.from({ length: ex.defaultParams.rows }, () =>
+          Array.from({ length: ex.defaultParams.rows }, () => "")
+        )
+      : id === "scalar-mult"
+        ? ""            // <-- statt Array
         : Array.from({ length: ex.defaultParams.dim }, () => "")
-    );
+  );
+
     setResult(null);
     setShowErrors(false);
     setIsCorrect(false);
@@ -251,13 +267,16 @@ function Gym() {
     const newParams = { ...params, [name]: Number(value) };
     setParams(newParams);
     setProblem(exercise.generate(newParams));
-    setUserInput(
-      exercise.id === "matrix-mult"
-        ? Array.from({ length: newParams.rows }, () =>
-            Array.from({ length: newParams.rows }, () => "")
-          )
-        : Array.from({ length: newParams.dim }, () => "")
-    );
+setUserInput(
+  exercise.id === "matrix-mult"
+    ? Array.from({ length: newParams.rows }, () =>
+        Array.from({ length: newParams.rows }, () => "")
+      )
+    : exercise.id === "scalar-mult"
+      ? ""            // <-- statt Array
+      : Array.from({ length: newParams.dim }, () => "")
+);
+
     setResult(null);
     setShowErrors(false);
     setIsCorrect(false);
@@ -270,29 +289,39 @@ function Gym() {
     setIsCorrect(false);
   };
 
-  const handleCheck = () => {
-    let parsed;
-    let correct = true;
-    let feedbackColors;
-    if (exercise.id === "matrix-mult") {
-      parsed = userInput.map((row) => row.map(Number));
-      feedbackColors = parsed.map((row, i) =>
-        row.map((val, j) =>
-          val === problem.solution[i][j] ? "" : "bg-red-100 border-red-600 text-red-600"
-        )
-      );
-      correct = parsed.every((row, i) => row.every((val, j) => val === problem.solution[i][j]));
-    } else {
-      parsed = userInput.map(Number);
-      feedbackColors = parsed.map((val, i) =>
-        val === problem.solution[i] ? "" : "bg-red-100 border-red-600 text-red-600"
-      );
-      correct = parsed.every((val, i) => val === problem.solution[i]);
-    }
-    setResult({ feedbackColors });
-    setIsCorrect(correct);
-    setShowErrors(false);
-  };
+const handleCheck = () => {
+  let parsed;
+  let correct = true;
+  let feedbackColors;
+
+  if (exercise.id === "matrix-mult") {
+    parsed = userInput.map((row) => row.map(Number));
+    feedbackColors = parsed.map((row, i) =>
+      row.map((val, j) =>
+        val === problem.solution[i][j] ? "" : "bg-red-100 border-red-600 text-red-600"
+      )
+    );
+    correct = parsed.every((row, i) => row.every((val, j) => val === problem.solution[i][j]));
+  } else if (exercise.id === "scalar-mult") {
+    parsed = Number(userInput); // nur eine Zahl
+    const correctVal = problem.solution;
+    feedbackColors =
+      parsed === correctVal ? "" : "bg-red-100 border-red-600 text-red-600";
+    correct = parsed === correctVal;
+  } else {
+    // vector-add, linear-comb ...
+    parsed = userInput.map(Number);
+    feedbackColors = parsed.map((val, i) =>
+      val === problem.solution[i] ? "" : "bg-red-100 border-red-600 text-red-600"
+    );
+    correct = parsed.every((val, i) => val === problem.solution[i]);
+  }
+
+  setResult({ feedbackColors });
+  setIsCorrect(correct);
+  setShowErrors(false);
+};
+
 
   const handleShowErrors = () => {
     setShowErrors(true);
@@ -313,11 +342,16 @@ function Gym() {
 
   const handleNewProblem = () => {
     setProblem(exercise.generate(params));
-    setUserInput(
-      exercise.id === "matrix-mult"
-        ? Array.from({ length: params.rows }, () => Array.from({ length: params.rows }, () => ""))
-        : Array.from({ length: params.dim }, () => "")
-    );
+setUserInput(
+  exercise.id === "matrix-mult"
+    ? Array.from({ length: params.rows }, () =>
+        Array.from({ length: params.rows }, () => "")
+      )
+    : exercise.id === "scalar-mult"
+      ? ""            // <-- statt Array
+      : Array.from({ length: params.dim }, () => "")
+);
+
     setResult(null);
     setShowErrors(false);
     setIsCorrect(false);
@@ -419,6 +453,7 @@ function Gym() {
         )}
       </div>
 
+      {/* Aufgabenanzeige */}
       <div className="rounded-xl shadow-lg p-6 w-full max-w-3xl border border-black mb-6">
         <div className="mb-4">
           {selected === "matrix-mult" && (
@@ -441,16 +476,19 @@ function Gym() {
 
           {selected === "scalar-mult" && (
             <div className="flex items-center justify-center mb-4">
-              <span className="text-lg font-mono font-font-normal  relative -top-0.5 mr-2">{problem.scalar} ×</span>
-              <VectorDisplay vector={problem.vector} />
-              <span className="text-lg font-mono font-font-normal  relative -top-0.5 mr-2">=</span>
-              <VectorInput
-                dim={params.dim}
+              <VectorDisplay vector={problem.v1} />
+              <span className="mx-4 text-2xl font-bold">·</span>
+              <VectorDisplay vector={problem.v2} />
+              <span className="mx-4 text-2xl font-bold">=</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className={`w-16 px-2 py-1 rounded border text-center outline-none font-mono ${
+                  result?.feedbackColors || ""
+                } bg-white border-black focus:border-red-600`}
                 value={userInput}
-                onChange={handleInputChange}
-                solution={problem.solution}
-                showFeedback={showErrors}
-                feedbackColors={result?.feedbackColors}
+                onChange={(e) => handleInputChange(e.target.value)}
               />
             </div>
           )}
@@ -477,17 +515,16 @@ function Gym() {
               {problem.vectors.map((vec, j) => (
                 <div key={j} className="flex items-center">
                   <div className="flex items-center mr-2">
-                    <span className="text-lg font-mono font-font-normal  relative -top-0.5">{problem.scalars[j]}</span>
-                    <span className="text-lg font-mono font-font-normal  relative -top-0.5 mx-1">×</span>
-
+                    <span className="text-lg font-mono relative -top-0.5">{problem.scalars[j]}</span>
+                    <span className="text-lg font-mono relative -top-0.5 mx-1">×</span>
                   </div>
                   <VectorDisplay vector={vec} />
                   {j < problem.vectors.length - 1 && (
-                    <span className="text-lg font-mono font-font-normal  relative -top-0.5">+</span>
+                    <span className="text-lg font-mono relative -top-0.5">+</span>
                   )}
                 </div>
               ))}
-              <span className="text-lg font-mono font-font-normal  relative -top-0.5">=</span>
+              <span className="text-lg font-mono relative -top-0.5">=</span>
               <VectorInput
                 dim={params.dim}
                 value={userInput}
@@ -500,15 +537,16 @@ function Gym() {
           )}
         </div>
 
+        {/* Buttons + Feedback */}
         <div className="flex items-center gap-4 justify-between w-full">
           <div className="flex gap-4">
-          <button
-            onClick={handleCheck}
-            className="mt-2 px-4 py-2 rounded font-semibold border border-black bg-white text-black hover:bg-red-100 transition-colors"
-            style={{ minWidth: 200 }}
-          >
-            Lösung prüfen
-          </button>
+            <button
+              onClick={handleCheck}
+              className="mt-2 px-4 py-2 rounded font-semibold border border-black bg-white text-black hover:bg-red-100 transition-colors"
+              style={{ minWidth: 200 }}
+            >
+              Lösung prüfen
+            </button>
             {isCorrect && (
               <div className="text-lg font-semibold text-green-600 flex items-center">
                 ✅ Richtig!
@@ -520,7 +558,7 @@ function Gym() {
               </span>
             )}
           </div>
-          {!isCorrect && result && (
+          {!isCorrect && result && selected!=="scalar-mult" &&(
             <div className="flex items-center gap-2 justify-end">
               <button
                 onClick={handleShowErrors}
@@ -533,6 +571,7 @@ function Gym() {
         </div>
       </div>
 
+      {/* Neue Aufgabe */}
       <button
         onClick={handleNewProblem}
         className="mt-2 px-4 py-2 rounded font-semibold border border-black bg-white text-black hover:bg-red-100 transition-colors"
@@ -542,6 +581,7 @@ function Gym() {
       </button>
     </div>
   );
+
 }
 
 export default Gym;

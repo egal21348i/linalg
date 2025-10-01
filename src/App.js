@@ -1,8 +1,9 @@
 import React from "react";
 import Gym from "./Gym";
 import Linearkombinationen from "./LinearKombinationen";
+import Canvas2DExample from "./Canvas2DExample";   // 🆕
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import { ReactComponent as GithubIcon } from "./github.svg"; // eigenes SVG
+import { ReactComponent as GithubIcon } from "./github.svg";
 
 const navLinks = [
   { name: "About", to: "/about" },
@@ -10,14 +11,12 @@ const navLinks = [
 
 const gridLinks = [
   { name: "Linearkombination", to: "/linearkombination" },
-  { name: "Matrizen", to: "/matrizen" },
-  // restliche 7 Plätze bleiben leer
+  { name: "Matrizen", to: "/canvas2d" }
 ];
 
 function Landing() {
   return (
     <div className="min-h-screen bg-white text-black font-sans">
-      {/* Navbar (hell, gefüllt, Hover rot) */}
       <nav className="flex items-center justify-between px-8 py-4 bg-white border-b border-black">
         <div className="flex items-center gap-6">
           <span className="text-2xl font-bold tracking-wide">LinAlg 2026</span>
@@ -40,7 +39,6 @@ function Landing() {
         </a>
       </nav>
 
-      {/* Welcome-Text */}
       <div className="max-w-2xl mx-auto mt-10 text-center px-4">
         <h1 className="text-3xl font-bold mb-4">Welcome to Linear Algebra</h1>
         <p className="text-base mb-8">
@@ -51,7 +49,6 @@ function Landing() {
         </p>
       </div>
 
-      {/* Oben: Gym (kompakt) */}
       <div className="max-w-md mx-auto mb-8 px-4">
         <Link
           to="/gym"
@@ -61,7 +58,6 @@ function Landing() {
         </Link>
       </div>
 
-      {/* 3x3 Grid: nur 2 Einträge belegt, rest dezente Platzhalter */}
       <div className="max-w-5xl mx-auto grid grid-cols-3 gap-4 px-4 pb-12">
         {gridLinks.map((link) => (
           <Link
@@ -88,7 +84,7 @@ function Page({ title }) {
     </div>
   );
 }
-// unten in derselben Datei einfügen (z.B. unter Page)
+
 function DisclaimerBanner() {
   return (
     <div className="w-full border-t border-yellow-200 bg-yellow-50 text-yellow-800">
@@ -102,26 +98,24 @@ function DisclaimerBanner() {
   );
 }
 
-
 function App() {
   return (
     <Router>
-      <div className="h-screen flex flex-col">       {/* Gesamt: 100vh */}
-        <div className="flex-1 overflow-hidden">     {/* Inhalt: Resthöhe, kein Scroll der Seite */}
+      <div className="h-screen flex flex-col">
+        <div className="flex-1 overflow-hidden">
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/gym" element={<Gym />} />
-            <Route path="/linearkombination" element={<Linearkombinationen/>} />
+            <Route path="/linearkombination" element={<Linearkombinationen />} />
             <Route path="/matrizen" element={<Page title="Matrizen" />} />
-            <Route path="/gleichungssysteme" element={<Page title="Lineare Gleichungssysteme" />} />
+            <Route path="/canvas2d" element={<Canvas2DExample />} />   {/* 🆕 */}
             <Route path="/about" element={<Page title="About" />} />
           </Routes>
         </div>
-        <DisclaimerBanner />                         {/* Banner: immer unten, ohne zu scrollen */}
+        <DisclaimerBanner />
       </div>
     </Router>
   );
 }
-
 
 export default App;
